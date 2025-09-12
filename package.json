@@ -2,16 +2,29 @@
   "name": "youtube-backend",
   "version": "1.0.0",
   "description": "Backend for youtube pro version",
-  "main": "index.js",
   "type": "module",
+  "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon -r dotenv/config --experimental-json-modules src/index.js"
   },
   "author": "Tushar Kumar",
   "license": "ISC",
   "devDependencies": {
     "nodemon": "^3.1.10",
-    "prettier": "^3.6.2"
-  }
+    "prettier": "3.6.2"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "mongoose": "^8.18.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tusharpr27/Youtube-pro-version-backend.git"
+  },
+  "keywords": [],
+  "bugs": {
+    "url": "https://github.com/Tusharpr27/Youtube-pro-version-backend/issues"
+  },
+  "homepage": "https://github.com/Tusharpr27/Youtube-pro-version-backend#readme"
 }
