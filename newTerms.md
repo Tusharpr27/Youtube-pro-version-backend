@@ -534,3 +534,193 @@ Both versions accomplish the same thing. The choice between them is mostly a mat
 
 This `Promise.resolve().catch(next)` pattern is a very common, concise, and powerful way to handle asynchronous errors in Express applications.
 
+Great question, Tushar! In JavaScript, a **constructor function** is used to create and initialize objects with a consistent structure. Think of it like a **blueprint** for building multiple objects that share the same properties and behaviors.
+
+---
+
+### 🧱 Why Use Constructor Functions?
+
+Here’s what they help you do:
+
+- **Create multiple similar objects** without repeating code
+- **Initialize properties** when the object is created
+- **Encapsulate logic** for object setup
+- **Promote code reuse** and modularity
+
+---
+
+### 🧪 Example
+
+```js
+function User(name, age) {
+  this.name = name;
+  this.age = age;
+  this.greet = function() {
+    return `Hi, I'm ${this.name} and I'm ${this.age} years old.`;
+  };
+}
+
+const user1 = new User("Tushar", 22);
+const user2 = new User("Aman", 25);
+
+console.log(user1.greet()); // Hi, I'm Tushar and I'm 22 years old.
+console.log(user2.greet()); // Hi, I'm Aman and I'm 25 years old.
+```
+
+- `User` is the constructor function.
+- `new User(...)` creates a new object with its own `name`, `age`, and `greet` method.
+- `this` refers to the newly created object.
+
+---
+
+### 🔄 Constructor vs Object Literal
+
+| Feature               | Constructor Function         | Object Literal              |
+|----------------------|------------------------------|-----------------------------|
+| Reusability          | High (can create many objects) | Low (one object only)       |
+| Initialization Logic | Yes                          | Manual                      |
+| Memory Efficiency    | Better with prototypes       | Can be heavier              |
+
+---
+
+### 🧠 Bonus: ES6 Class Syntax
+
+Constructor functions are the foundation of ES6 `class` syntax:
+
+```js
+class User {
+  constructor(name, age) {
+    this.name = name;
+    this.age = age;
+  }
+
+  greet() {
+    return `Hi, I'm ${this.name}`;
+  }
+}
+```
+Absolutely, Tushar! Let’s walk through this step-by-step like a dry-run trace, so you can see exactly how the constructor function works under the hood.
+
+---
+
+### 🧠 Step-by-Step Breakdown
+
+#### 1. **Function Declaration**
+```js
+function User(name, age) {
+  this.name = name;
+  this.age = age;
+  this.greet = function() {
+    return `Hi, I'm ${this.name} and I'm ${this.age} years old.`;
+  };
+}
+```
+
+- This is a **constructor function** named `User`.
+- It takes two parameters: `name` and `age`.
+- Inside the function, `this` refers to the **new object** being created.
+- It assigns `name` and `age` to the object.
+- It also defines a method `greet()` that returns a personalized string.
+
+---
+
+#### 2. **Creating Instances**
+```js
+const user1 = new User("Tushar", 22);
+const user2 = new User("Aman", 25);
+```
+
+- The `new` keyword does 4 things:
+  1. Creates a new empty object: `{}`
+  2. Sets `this` inside the constructor to point to that new object
+  3. Executes the constructor code, assigning properties to `this`
+  4. Returns the newly created object
+
+So now:
+```js
+user1 = {
+  name: "Tushar",
+  age: 22,
+  greet: function() { return `Hi, I'm Tushar and I'm 22 years old.`; }
+}
+
+user2 = {
+  name: "Aman",
+  age: 25,
+  greet: function() { return `Hi, I'm Aman and I'm 25 years old.`; }
+}
+```
+
+---
+
+#### 3. **Calling Methods**
+```js
+console.log(user1.greet()); // Hi, I'm Tushar and I'm 22 years old.
+console.log(user2.greet()); // Hi, I'm Aman and I'm 25 years old.
+```
+
+- Each object has its own copy of the `greet()` method.
+- When you call `user1.greet()`, it uses `user1`'s `name` and `age`.
+- Same for `user2`.
+
+---
+
+### 🧪 Optimization Tip
+
+Right now, each `User` object has its own copy of `greet()`. That’s fine for small apps, but for memory efficiency, you can move `greet()` to the prototype:
+
+```js
+function User(name, age) {
+  this.name = name;
+  this.age = age;
+}
+
+User.prototype.greet = function() {
+  return `Hi, I'm ${this.name} and I'm ${this.age} years old.`;
+};
+```
+
+Now all `User` instances share the same `greet()` method, saving memory.
+
+---
+
+Absolutely! Let's break down this line of code word by word:
+
+```js
+export const Video = mongoose.model("Video", videoSchema);
+```
+
+### 🧠 Word-by-Word Breakdown
+
+- **`export`**  
+  This keyword makes the `Video` model available outside of the current file. So if another file wants to use this model, it can import it.
+
+- **`const`**  
+  Declares a constant variable. Once assigned, `Video` cannot be reassigned to a different value (though its contents can still be modified if it's an object).
+
+- **`Video`**  
+  This is the name of the constant you're defining. It will hold the Mongoose model, and you'll use this name to interact with your MongoDB collection in your code.
+
+- **`=`**  
+  The assignment operator. It assigns the result of `mongoose.model(...)` to the `Video` constant.
+
+- **`mongoose`**  
+  Refers to the Mongoose library, which is an ODM (Object Data Modeling) tool for MongoDB and Node.js. It helps you define schemas and interact with MongoDB in a structured way.
+
+- **`.model(...)`**  
+  A method provided by Mongoose to create a model. A model is a wrapper around a schema and provides an interface to the database for CRUD operations.
+
+- **`"Video"`**  
+  The name of the model. Mongoose will automatically create a collection named `videos` (lowercase and pluralized) in MongoDB based on this.
+
+- **`videoSchema`**  
+  This is the schema object that defines the structure of documents in the `videos` collection. It tells Mongoose what fields each video document should have and what rules to apply.
+
+---
+
+📦 **In summary**:  
+You're creating a Mongoose model named `Video` using the `videoSchema`, and you're exporting it so other parts of your application can use it to interact with the `videos` collection in MongoDB.
+
+Want to see how you might use this model to create or query a video document?
+
+
