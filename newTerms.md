@@ -721,6 +721,186 @@ export const Video = mongoose.model("Video", videoSchema);
 📦 **In summary**:  
 You're creating a Mongoose model named `Video` using the `videoSchema`, and you're exporting it so other parts of your application can use it to interact with the `videos` collection in MongoDB.
 
-Want to see how you might use this model to create or query a video document?
+This code is a crucial security feature in a Node.js application using Mongoose for a MongoDB database. It ensures that user passwords are never stored in plain text.
+
+It's split into two main parts: a function that runs **before** saving a user, and a helper function to check passwords during login.
+
+-----
+
+### \#\# Part 1: Hashing the Password Before Saving
+
+This first block is a Mongoose "pre-save hook." It's a piece of middleware that automatically runs right before a user document is saved to the database.
+
+```javascript
+userSchema.pre('save', async function (next) {
+  if (!this.isModified('Password')) return next();
+
+  this.Password = await bcrypt.hash(this.Password, 10);
+  next();
+})
+```
+
+  * **`userSchema.pre('save', ...)`**
+
+      * **`userSchema`**: Your Mongoose schema object that defines the structure of a user.
+      * **`.pre('save', ...)`**: This tells Mongoose: "Before you execute the **'save'** command, I want you to run the following function."
+
+  * **`async function (next) { ... }`**
+
+      * **`async function`**: We declare the function as `async` because the hashing process (`bcrypt.hash`) is asynchronous (it takes time to complete). We use a regular `function` here instead of an arrow function (`=>`) because we need to use the `this` keyword to refer to the user document being saved.
+      * **`(next)`**: `next` is a function that tells Mongoose to proceed to the next step (which is actually saving the document). If we don't call `next()`, the application will hang.
+
+  * **`if (!this.isModified('Password')) return next();`**
+
+      * **`this`**: Inside this function, `this` refers to the individual user document that is about to be saved.
+      * **`.isModified('Password')`**: A Mongoose method that checks if the `Password` field has been changed. It returns `true` or `false`.
+      * **`!this.isModified(...)`**: The `!` means "not". So, this line reads: "**If the password has NOT been modified**...". This is an important optimization. It prevents the password from being re-hashed every time a user updates other information, like their email address.
+      * **`return next()`**: If the password wasn't changed, we simply skip the rest of the function and proceed with saving.
+
+  * **`this.Password = await bcrypt.hash(this.Password, 10);`**
+
+      * **`this.Password =`**: We are overwriting the plain-text password that was submitted.
+      * **`await bcrypt.hash(...)`**: This is the core of the security.
+          * **`bcrypt.hash`**: Calls the `hash` function from the `bcrypt` library.
+          * **`this.Password`**: The first argument is the plain-text password to be hashed.
+          * **`10`**: This is the "salt rounds" or cost factor. It determines how complex and time-consuming the hashing algorithm is. A higher number is more secure but slower. `10` is a good, standard value.
+
+  * **`next()`**: After the password has been successfully hashed, we call `next()` to finally allow the user document to be saved to the database.
+
+-----
+
+### \#\# Part 2: Comparing Passwords for Login
+
+This second block adds a custom helper method to your user schema. You'll use this method on a user document to verify a password attempt during login.
+
+```javascript
+userSchema.methods.comparePassword = async function (Password) {
+  return await bcrypt.compare(Password, this.Password)
+}
+```
+
+  * **`userSchema.methods.comparePassword = ...`**
+
+      * **`userSchema.methods`**: An object where you can attach custom "instance methods"—functions that will be available on every document retrieved from this collection.
+      * **`comparePassword`**: The name we are giving our custom method.
+
+  * **`async function (Password) { ... }`**
+
+      * This function takes one argument, `Password`, which will be the plain-text password a user submits when trying to log in.
+
+  * **`return await bcrypt.compare(Password, this.Password)`**
+
+      * **`bcrypt.compare`**: A special function from `bcrypt` that securely compares a plain-text password with a hashed password without ever needing to "un-hash" the stored one.
+      * **`Password`**: The first argument is the plain-text password from the login form.
+      * **`this.Password`**: The second argument is the **hashed password** that is stored in the database for that user (`this` refers to the user document you're calling the method on).
+      * The function returns a promise that resolves to `true` if they match and `false` if they don't.
+
+### \#\# Why We Use This
+
+The entire purpose of this code is to follow the \#1 rule of password security: **Never, ever store passwords in plain text.**
+
+1.  **Security against Data Breaches**: If your database is ever compromised, attackers will only get a list of useless, jumbled hashes instead of actual user passwords.
+2.  **One-Way Hashing**: Hashing is a one-way process. `bcrypt` is designed so that it's practically impossible to reverse the hash to get the original password.
+3.  **Safe Comparison**: The `bcrypt.compare` method allows you to verify a user's password without ever exposing or decrypting the stored hash, making the login process secure.
+
+This code defines two helper functions on a Mongoose user schema to create JSON Web Tokens (JWTs): one for **access** and one for **refresh**.
+
+This is a very common and secure pattern for user authentication.
+
+-----
+
+### \#\# What This Code Does (The "Why")
+
+This code attaches two methods, `generateAccessToken` and `generateRefreshToken`, directly to every user document.
+
+Instead of writing complex token-creation logic in your login controller, you can now simply find a user and call `user.generateAccessToken()` to get a token.
+
+  * The **Access Token** is a short-lived token (e.g., 15 minutes) that the user sends with every API request to prove who they are.
+  * The **Refresh Token** is a long-lived token (e.g., 7 days) that is used only **one time** to get a new access token when the old one expires.
+
+### \#\# Word-by-Word Breakdown
+
+Let's break down the first function. The second one is almost identical.
+
+```javascript
+userSchema.methods.generateAccessToken = function () {
+```
+
+  * **`userSchema`**: Your Mongoose schema object that defines the structure of a user.
+  * **`.methods`**: An object on the schema. Any function you add here becomes an "instance method," meaning it's a function that can be called on any individual user document.
+  * **`.generateAccessToken`**: The custom name you are giving to this new function.
+  * **`= function () { ... }`**: You are assigning a function as the method.
+      * **IMPORTANT**: A regular `function ()` is used (not an arrow function `=>`) because we need to use the `this` keyword. Inside this function, **`this` refers to the specific user document** you are calling the method on.
+
+<!-- end list -->
+
+```javascript
+return jwt.sign(
+```
+
+  * **`return`**: This gives the result of the function back to whatever called it.
+  * **`jwt.sign`**: This is the main function from the `jsonwebtoken` library. Its job is to create a new, signed JWT. It takes three arguments:
+    1.  The Payload (data to store in the token)
+    2.  The Secret Key (to sign the token)
+    3.  The Options (like expiration time)
+
+-----
+
+#### Argument 1: The Payload
+
+```javascript
+    {
+        _id: this._id,
+        username: this.username,
+        email: this.email,
+        fullName: this.fullName,
+    },
+```
+
+This object is the **payload**—the information that will be stored inside the token.
+
+  * **`_id: this._id`**: Takes the unique MongoDB `_id` from the user document (`this._id`) and puts it into the token's payload with the key `_id`.
+  * **`username: this.username`**: Takes the `username` from the user document and adds it to the payload.
+  * **`email: this.email`**, **`fullName: this.fullName`**: Does the same for the user's email and full name.
+
+This allows the server to identify the user just by decoding the token, without needing to query the database on every request.
+
+-----
+
+#### Argument 2: The Secret Key
+
+```javascript
+    process.env.JWT_ACCESS_TOKEN_SECRET,
+```
+
+This is the **most critical part for security**.
+
+  * **`process.env`**: This is a Node.js object that holds your environment variables (secret values loaded from a `.env` file).
+  * **`.JWT_ACCESS_TOKEN_SECRET`**: This is the name of your environment variable that holds the secret key. This key is like a private password for your server. It's used to create the token's signature. It's the **only** thing that can verify if a token is real and hasn't been faked.
+
+-----
+
+#### Argument 3: The Options
+
+```javascript
+    {
+        expiresIn: JWT_ACCESS_TOKEN_EXPIRY
+    }
+);
+```
+
+This object sets the rules for the token.
+
+  * **`expiresIn`**: A standard JWT option that defines how long the token will be valid.
+  * **`JWT_ACCESS_TOKEN_EXPIRY`**: This is another environment variable that probably holds a string like `"15m"` (15 minutes) or `"1h"` (1 hour).
+
+### \#\# The `generateRefreshToken` Function
+
+This function is identical, but with two key differences:
+
+1.  **`process.env.JWT_REFRESH_TOKEN_SECRET`**: It uses a **different secret key**. This is a crucial security practice.
+2.  **`JWT_REFRESH_TOKEN_EXPIRY`**: It uses a **different (and much longer) expiration time**, like `"7d"` (7 days).
+
+This separation of concerns is what makes the authentication system robust.
 
 
